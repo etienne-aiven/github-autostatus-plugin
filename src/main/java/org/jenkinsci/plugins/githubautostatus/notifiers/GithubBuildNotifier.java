@@ -49,6 +49,7 @@ public class GithubBuildNotifier extends BuildNotifier {
             .put(BuildStage.State.SkippedFailure, GHCommitState.SUCCESS)
             .put(BuildStage.State.SkippedUnstable, GHCommitState.SUCCESS)
             .put(BuildStage.State.SkippedConditional, GHCommitState.SUCCESS)
+            .put(BuildStage.State.Unstable, GHCommitState.ERROR)
             .build();
 
     static final ImmutableMap<BuildStage.State, String> DESCRIPTION_MAP = new ImmutableMap.Builder()
@@ -58,6 +59,7 @@ public class GithubBuildNotifier extends BuildNotifier {
             .put(BuildStage.State.SkippedFailure, "Stage did not run due to earlier failure(s)")
             .put(BuildStage.State.SkippedUnstable, "Stage did not run due to earlier stage(s) marking the build as unstable")
             .put(BuildStage.State.SkippedConditional, "Stage did not run due to when conditional")
+            .put(BuildStage.State.Unstable, "Stage failed but is known to be unstable")
             .build();
 
     /**
