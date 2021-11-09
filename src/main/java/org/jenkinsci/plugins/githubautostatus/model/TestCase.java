@@ -24,7 +24,7 @@
 package org.jenkinsci.plugins.githubautostatus.model;
 
 import hudson.tasks.junit.CaseResult;
-
+//import org.junit.CaseResult;
 import java.util.Objects;
 
 /**

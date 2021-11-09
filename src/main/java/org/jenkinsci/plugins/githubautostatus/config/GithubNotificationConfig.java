@@ -25,7 +25,7 @@ package org.jenkinsci.plugins.githubautostatus.config;
 
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import hudson.model.Item;
 import hudson.model.ItemGroup;
@@ -38,8 +38,8 @@ import jenkins.scm.api.SCMSource;
 import org.jenkinsci.plugins.github_branch_source.GitHubSCMSource;
 import org.jenkinsci.plugins.github_branch_source.PullRequestSCMHead;
 import org.jenkinsci.plugins.github_branch_source.PullRequestSCMRevision;
+import org.jenkinsci.plugins.github_branch_source.Connector;
 import org.jenkinsci.plugins.githubautostatus.BuildStatusConfig;
-import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
@@ -136,7 +136,7 @@ public class GithubNotificationConfig {
         if (buildStatusConfig.getEnableGithub()) {
             try {
                 GithubNotificationConfig result = new GithubNotificationConfig();
-                result.githubBuilder = githubBuilder;
+                //result.githubBuilder = githubBuilder;
                 if (!result.extractCommitSha(run)) {
                     return null;
                 }
@@ -232,30 +232,17 @@ public class GithubNotificationConfig {
         repoName = gitHubScmSource.getRepository();
         String url = gitHubScmSource.getApiUri();
 
-        String userName = null;
-        String password = "";
-
-        UsernamePasswordCredentials credentials = getCredentials(UsernamePasswordCredentials.class, credentialsId, build.getParent());
-        if (credentials != null) {
-            userName = credentials.getUsername();
-            password = credentials.getPassword().getPlainText();
-        } else {
-            StringCredentials stringCredentials = getCredentials(StringCredentials.class, credentialsId, build.getParent());
-            if (stringCredentials != null) {
-                userName = stringCredentials.getId();
-                password = stringCredentials.getSecret().getPlainText();
-            }
-        }
-        if (userName == null) {
+        // lookup using StandardCredentials to allow support for GitHub App credentials
+        StandardCredentials credentials =  getCredentials(StandardCredentials.class, credentialsId, build.getParent());
+        if (credentials == null) {
             log(Level.WARNING, "Could not resolve credentials - status will not be provided for this build");
             return false;
         }
-
-        githubBuilder = githubBuilder.withEndpoint(url);
-        githubBuilder.withPassword(userName, password);
-        GitHub github = githubBuilder.build();
-        repo = github.getUser(repoOwner).getRepository(repoName);
-
+        // use the Connector from github_branch_status plugin
+        // this gives us the RateLimiter and GitHub App credential handling
+        GitHub connector = Connector.connect(url, credentials);
+        repo = connector.getUser(repoOwner).getRepository(repoName);
+        
         return repo != null;
     }
 
